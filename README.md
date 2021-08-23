@@ -1,7 +1,7 @@
 # nape
-The normalised aggregated power envelope (nape) is a representation of an audio signal calculated by summing the columns of the short-time Fourier transform (STFT).
+The normalised aggregated power envelope (nape) is a representation of an audio signal calculated by summing the columns of its short-time Fourier transform (STFT).
 
-The function `nape` uses librosa for digital signal processing an returns a data frame with the times of the short-time spectra and the envelope values.
+The function `nape` uses [`librosa`](https://github.com/librosa) for digital signal processing and returns a dataframe with the times of the short-time spectra and the envelope values.
 
 This approach will work with any audio file, but I have found it to be particularly useful when analysing film soundtracks.
 
@@ -19,11 +19,13 @@ The function is very easy to use and requires only a handful of arguments:
 
 To demonstrate, we can apply nape to Brad Sucks' 'Total Breakdown,' which you can download under a Attribution-ShareAlike 3.0 International License here: [https://freemusicarchive.org/music/Brad_Sucks/Out_Of_It/07\_-\_Brad_Sucks\_-\_Total_Breakdown](https://freemusicarchive.org/music/Brad_Sucks/Out_Of_It/07_-_Brad_Sucks_-_Total_Breakdown).
 
-To calculate the envelope we create a data frame `df` using `nape`:
+To calculate the envelope we apply `nape` to the song:
 
 ```Python
 df = nape(path/to/audio/file, sr = 44100, mono = False, nfft = 2048, hop = 512, norm = True)
 ```
+
+This will give us the dataframe `df`:
 
 |   | time  | nape  |
 | :-----: | :-: | :-: |
@@ -32,6 +34,7 @@ df = nape(path/to/audio/file, sr = 44100, mono = False, nfft = 2048, hop = 512, 
 | 2 | 0.023219 | 2.246583e-06 |
 | 3 | 0.034828 | 3.218146e-06 |
 | 4 | 0.046438 | 3.266896e-06 |
+| ... | ... | ... |
 
 
 The result can then be plotted using
