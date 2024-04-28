@@ -1,7 +1,9 @@
-def nape(audio, sr, mono = False, nfft = 2048, hop = 512, norm = True):
-    
+import librosa
+import numpy as np
+import pandas as pd
+
+def nape(path: str, sr: int = 22050, mono: bool = True, nfft: int = 2048, hop: int = 512, norm: bool = True) -> pd.Dataframe:
     """
-    
     Normalised aggregated power envelope (nape).
     
     The normalised aggregated power envelope is a representation of an audio signal
@@ -11,30 +13,27 @@ def nape(audio, sr, mono = False, nfft = 2048, hop = 512, norm = True):
     
     Parameters
     ----------
-    audio : an audio file, loaded using librosa.load().
+    path (str): the path to an audio file, loaded using librosa.load().
     
-    sr : the sampling rate of the audio file in Hz.
+    sr (int, optional): the target sampling rate in Hz. Defaults to 22050 Hz.
     
-    mono : is the audio file mono or stereo - if false, stereo files will be converted to mono using librosa.to_mono().
+    mono (bool, optional): is the audio file mono or stereo - if False, stereo files will be converted to mono using librosa.to_mono(). Defaults to True.
     
-    nfft : the number of samples within a window, which should be a power of 2  - passed to librosa.stft() as n_fft.
+    nfft (int, optional): the number of samples within a window, which should be a power of 2  - passed to librosa.stft() as n_fft. Defaults to 2048.
     
-    hop : the number of audio samples betwen adjacent spectra in the STFT - passed to librosa.stft() as hop_length.
+    hop (int, optional): the number of audio samples betwen adjacent spectra in the STFT - passed to librosa.stft() as hop_length. Defaults to 512.
     
-    norm : the default is to aggregated power envelope is normalised to a unit area. If False the envelope is not normalised.
+    norm (bool, optional): the default is to aggregated power envelope is normalised to a unit area. If False the envelope is not normalised. Defaults to True.
     
-
     Returns
     -------
-    a data frame with two columns:
+    pandas.DataFrame: a data frame with two columns:
         times: the times of the spectra in the STFT
         nape: the normalised aggregated power envelope
-
 
     Examples
     --------
     df = nape(audio, sr = 48000, mono = True, nfft = 2048, hop = 512, norm = False)
-    
     
     References
     ----------
@@ -42,30 +41,31 @@ def nape(audio, sr, mono = False, nfft = 2048, hop = 512, norm = True):
     https://www.academia.edu/43289938/Computational_analysis_of_a_horror_film_trailer_soundtrack_with_Python 
 
     """
+    # Check inputs are valid
+    if not isinstance(sr, (int, np.integer)) or (sr < 0):
+        raise ValueError("sr must be a positive integer")
     
-    import librosa
-    import numpy as np
-    import pandas as pd
+    if not isinstance(hop, (int, np.integer)) or (hop < 0):
+        raise ValueError("hop must be a positive integer")
     
-    # load audio file and convert to mono
-    y, sr = librosa.load(audio, sr, mono = mono)
-    if mono == False:
-        y = librosa.to_mono(y)
-    else:
-        y = y
+    if not isinstance(nfft, (int, np.integer)) or (nfft < 0):
+        raise ValueError("nfft must be a positive integer")
     
-    # calculate the short-time Fourier transform
-    D = np.abs(librosa.stft(y, n_fft = nfft, hop_length = hop))
+    # Load audio file and convert to mono if necessary
+    audio: np.ndarray[np.float32] = librosa.load(path, sr = sr, mono = mono)[0]
+    if not mono:
+        y = librosa.to_mono(audio)
+    
+    # Calculate the short-time Fourier transform
+    D: np.ndarray[np.float32] = np.abs(librosa.stft(audio, n_fft = nfft, hop_length = hop))
     
     # Sum the columns of the STFT and normalise if requried
-    nape = np.sum(D, axis = 0) 
-    if norm == True:
+    nape: np.ndarray[np.float32] = np.sum(D, axis = 0)
+    if norm:
         nape = nape/sum(nape)
-    else:
-        nape = nape
     
-    # set times of spectra
-    times = [x / (len(nape) / (len(y) / sr)) for x in list(range(0, len(nape)))]
+    # Set times of spectra
+    times: list[float] = [x/(len(nape) / (len(y)/sr)) for x in list(range(0, len(nape)))]
     
-    # collect and return as a data frame
+    # Collect and return as a data frame
     return pd.DataFrame(data = {'time': times, 'nape': nape})
